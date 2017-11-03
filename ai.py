@@ -1,32 +1,52 @@
-# AI for Self Driving Car
+# The AI
 
 # Importing the libraries
 import numpy as np
 import random
 import os
 import torch
+
+# Tools need to implement neural net
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
+# Functional package contains the uberloss to speed convergence
+import torch.nn.functional as F 
+# Optimiser to perform stochastic gradient decent
+import torch.optim as optim 
+# To convert from tensors to a variable which contains a gradient
 import torch.autograd as autograd
-from torch.autograd import Variable
+from torch.autograd import variable
 
 # Creating the architecture of the neural network
 
-class Neural_net(nn.Module): # We're inheriting from all the tools of the neural net module
-    
-    # Any variable below with self.VAR_NAME shows that the variable is an abject of this class
-    
-    def __init__ (self, input_neurons, np_actions): 
-        # Input neurons is the number of inputs that our model takes from it's environment
-        # np_actions are the output neurons: up, left or right
+class Neural_network(nn.Module): # Inheriting from this module parent class
 
-        super(Neural_net, self).__init__() # This lets us use all the tools of nn.module
-        self.input_neurons = input_neurons # Attatching the input size to the object
-        self.np_actions = np_actions       # Attatching the output neurons to the object
-        
-        # Full_connections_between(input, hidden layer)
-        self.full_connection1 = nn.Linear(self.input_neurons, 30) 
+    # Creating the architecture of the neural network
+    def __init__(self, input_neurons, output_neurons): 
+        super(Neural_network, self).__init__() # Inherits from module
+        # input_neurons is the number of dimensions of inputs that our model takes from it's environment
+        # Rotation, Rotations negative, 3 sensors
+        # output_neurons: up, left or right        
 
-        # Full_connections_between(hidden layer, output layer)
-        self.full_connection2 = nn.Linear(30, np_actions)
+        # Attaching these dimension variables to our object
+        self.input_neurons = input_neurons 
+        self.output_neurons = output_neurons
+
+        # Mapping out full connections between layers. 30 = hidden layer nodes
+        self.full_connection1 = nn.Linear(self, input_neurons, 30)
+        self.full_connection2 = nn.Linear(self, 30, output_neurons)
+
+        # Returns the q-values for each possible action depending on the state
+        def forward_propagate(self, state):
+            # Activating the hidden neurons
+
+            # Using the rectifier function "relu" to activate the hidden_neurons
+            hidden_neurons = F.relu(self.full_connection1(state)) # In full_conn... we gave an argument of out input state to go from our input -> hidden_neurons
+            
+            # Hidden neurons are activated...
+
+            # From hidden, neurons we output q_values to output neurons
+            q_values = self.full_connection2(hidden_neurons)
+            return q_values
+
+        # Emplementing experience replay
+
