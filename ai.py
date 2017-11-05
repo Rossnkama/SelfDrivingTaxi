@@ -76,3 +76,28 @@ class Experience_replay(object):
         # Lambda function will take out trch variables and concatanate them inrespect to the first dimension & convert these tensors to a torch_var...
         # ... which contains both a tensor and a gradient so that we can use diffrentiation to update weights.
         return map(lambda x: Variable(torch.cat(x, 0)), samples)
+
+# Our neural network
+class Dqn(object):
+    def __init__(self, input_neurons, output_neurons, gamma):
+        self.gamma = gamma
+        
+        # The sliding window of the mean of the last 100 rewards to evaluate the evolution of our AI's performance
+        self.reward_window = []
+        
+        # Object of the Neural net class
+        self.model = Neural_network(input_neurons, output_neurons)
+        self.memory = Experience_replay(100000)
+        
+        # Optimises weights with the Adam algorthm to do stochastic gradient decent with out model's parameters
+        self.optimiser = optim.Adam(self.model.parameters(), lr = 1e-3) # lr is out learning rate
+        
+        # Making out tensor object of our last state
+        # The unsqeeze bit kind of transposes our tensor into a vector of row_size(input_neurons)
+        self.last_state = torch.Tensor(input_neurons).unsqueeze(0)
+        
+        # Initiating action to dictate our rotation angle using the action2rotation vector
+        self.last_action = 0
+        # Can be 1 or -1 
+        self.last_reward = 0
+
