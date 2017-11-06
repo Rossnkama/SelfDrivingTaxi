@@ -3,7 +3,7 @@
 # Importing the libraries
 import numpy as np
 import random
-import os
+import os             
 import torch
 
 # Tools need to implement neural net
@@ -46,6 +46,7 @@ class Neural_network(nn.Module): # Inheriting from this module parent class
 
             # From hidden, neurons we output q_values to output neurons
             q_values = self.full_connection2(hidden_neurons)
+            
             return q_values
 
 # Emplementing experience replay
@@ -101,3 +102,17 @@ class Dqn(object):
         # Can be 1 or -1 
         self.last_reward = 0
 
+        def select_action(self, state):
+            
+            # A softmax applied to out nn's returned q-vals
+
+            # volatile = True means we don't want the gradient with this torch variable
+            probabilities = F.softmax(self.model(Variable(state, volatile = True)) * 7) 
+            # Temperature = 7 where temp =  how sure computer want's to accept a q value
+            # The higher the temperature, the higher the probability of the winning q-value of the softmax
+
+            action = probabilities.multinomial()
+            return action.data[0][0]
+
+        def learn(self, batch_state, batch_next_state, batch_reward, batch_action):
+            
