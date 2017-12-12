@@ -13,106 +13,74 @@ import torch.nn.functional as F
 # Optimiser to perform stochastic gradient decent
 import torch.optim as optim 
 # To convert from torch-tensors to a variable which contains the tensor and a gradient
-import torch.autograd as autograd
-from torch.autograd import Variable
+import torch.autograd as autograd; from torch.autograd import Variable
 
 # Creating the architecture of the neural network
+class NeuralNetwork(object):
+	""" The network will take inputs from the sensors and give us one of 
+		3 possible actions by forward propagating our out input values to
+		be backpropagated later to optimise our weights.
+    """
+	def __init__(self, input_neurons, neurons_output):
+		# Inherits from nn.Module
+		super(NeuralNetwork, self).__init__()
 
-class Neural_network(nn.Module): # Inheriting from this module parent class
+		# Attatching our parameters as variables to the later created object
+        self.input_neurons = input_neurons
+        self.neurons_output = neurons_output
 
-    # Creating the architecture of the neural network
-    def __init__(self, input_neurons, output_neurons): 
-        super(Neural_network, self).__init__() # Inherits from module
-        # input_neurons is the number of dimensions of inputs that our model takes from it's environment
-        # Rotation, Rotations negative, 3 sensors
-        # output_neurons: up, left or right        
+        ''' Creating synaptical connection between layers 
+            input --> hidden --> output 
+            REMEMBER TO MESS WITH HYPERPARAMETER(30) LATER '''
+        self.input_layer = nn.Linear(self.input_neurons, 30)
+        self.hidden_layer = nn.Linear(30, self.neurons_output)
 
-        # Attaching these dimension variables to our object
-        self.input_neurons = input_neurons 
-        self.output_neurons = output_neurons
+    def forward_propagate(self, state):
+    	# Applying a rectifyer activation function against our 
+    	activated_neurons = F.relu(self.input_layer(state))
+    	q_values = self.hidden_layer(activated_neurons)
 
-        # Mapping out full connections between layers. 30 = hidden layer nodes
-        self.full_connection1 = nn.Linear(self, input_neurons, 30)
-        self.full_connection2 = nn.Linear(self, 30, output_neurons)
+    	# Returning the weighted, rectified input neurons
+    	return q_values
 
-        # Returns the q-values for each possible action depending on the state
-        def forward_propagate(self, state):
-            # Activating the hidden neurons
+# Experience replay 
+class ExperienceReplay(object):
+	""" This is too prevent independencies/correlations between consecutive states from
+		biasing our network by storing interdependent states into batch experiences and 
+		then putting them into the network after. 
 
-            # Using the rectifier function "relu" to activate the hidden_neurons
-            hidden_neurons = F.relu(self.full_connection1(state)) # In full_conn... we gave an argument of out input state to go from our input -> hidden_neurons
-            
-            # Hidden neurons are activated...
+		This is done by taking a uniformly distributed and random selection of a batch 
+		of experiences to learn from.
 
-            # From hidden, neurons we output q_values to output neurons
-            q_values = self.full_connection2(hidden_neurons)
-            
-            return q_values
+		This is where an experience is defined --> [s, a, s_prime, reward]...
+		The sample batches are reshaped experiences being [[s1, s2, s3], [a1, a2, a3], [s_prime1, s_prime2, s_prime3]]
+	"""
 
-# Emplementing experience replay
-class Experience_replay(object):
+	''' Experiement with the batch capacity hyperparameter since less structured curves 
+	    are more structured with smaller rolling windows (batch sizes).
+	'''
 
-    def __init__(self, capacity):
+	def __init__(self, capacity):
+		''' Capacity dictates how many batch experiences can can be stored in our sliding
+		    window '''
+		self.capacity = capacity
+		
+		# This is the sliding window a list of batch experiences.
+		self.memory = []
 
-        # To define a capacity for how much memory our AI can handle 
-        self.capacity = capacity 
-        
-        # Initialising our memory which holds the last n amount of events
-        self.memory = []
+		# Pushes an experience batch to our memory's sliding window...
+		def push(self, experience):
+			self.memory.append(experience)
+			if len(self.memory) > self.capacity:
+				del self.memory[0]
 
-    # This push function appends a new event into memory keeping withing our memory's capacity
-    def push(self, event):
-        self.memory.append(event)
-        if len(self.memory) > self.capacity: 
-            del self.memory[0]
+		# We're batching up samples of experiences for experience replay
+		def sample(self, batch_size):
+			
+			# Zipping corresponding batch features together as explained in docs
+			samples = zip(*random.sample(self.memory, batch_size))
 
-    def sample(self, batch_size):
-        # If list = ((1, 2, 3), (4, 5, 6)) then zip(*list) = ((1, 4), (2, 5), (3, 6)) => (sampleOfStates, sampleOfActions, sampleOfRewards)
-        samples = zip(*random.sample(self.memory, batch_size))
-        # Putting the batch samples from above into a PyTorch variable to get their gradient for differentiation for grad_decent
-        
-        # map returns list of results of a function applied to an argument of the function (lambda in this case) where...
-        # ...x is the second argument to the map function
-
-        # Lambda function will take out trch variables and concatanate them inrespect to the first dimension & convert these tensors to a torch_var...
-        # ... which contains both a tensor and a gradient so that we can use diffrentiation to update weights.
-        return map(lambda x: Variable(torch.cat(x, 0)), samples)
-
-# Our neural network
-class Dqn(object):
-    def __init__(self, input_neurons, output_neurons, gamma):
-        self.gamma = gamma
-        
-        # The sliding window of the mean of the last 100 rewards to evaluate the evolution of our AI's performance
-        self.reward_window = []
-        
-        # Object of the Neural net class
-        self.model = Neural_network(input_neurons, output_neurons)
-        self.memory = Experience_replay(100000)
-        
-        # Optimises weights with the Adam algorthm to do stochastic gradient decent with out model's parameters
-        self.optimiser = optim.Adam(self.model.parameters(), lr = 1e-3) # lr is out learning rate
-        
-        # Making out tensor object of our last state
-        # The unsqeeze bit kind of transposes our tensor into a vector of row_size(input_neurons)
-        self.last_state = torch.Tensor(input_neurons).unsqueeze(0)
-        
-        # Initiating action to dictate our rotation angle using the action2rotation vector
-        self.last_action = 0
-        # Can be 1 or -1 
-        self.last_reward = 0
-
-        def select_action(self, state):
-            
-            # A softmax applied to out nn's returned q-vals
-
-            # volatile = True means we don't want the gradient with this torch variable
-            probabilities = F.softmax(self.model(Variable(state, volatile = True)) * 7) 
-            # Temperature = 7 where temp =  how sure computer want's to accept a q value
-            # The higher the temperature, the higher the probability of the winning q-value of the softmax
-
-            action = probabilities.multinomial()
-            return action.data[0][0]
-
-        def learn(self, batch_state, batch_next_state, batch_reward, batch_action):
-            
+			''' Wrapping each of all our samples into a pytorch variable for backpropagation
+			    and then reshaping these samples so that they're shaped with respect
+			    to time. '''
+			return map(lambda x: Variable(torch.cat(x, 0)), samples)

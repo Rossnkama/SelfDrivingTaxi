@@ -29,7 +29,7 @@ n_points = 0 # the total number of points in the last drawing
 length = 0 # the length of the last drawing
 
 # Getting our AI, which we call "brain", and that contains our neural network that represents our Q-function
-brain = Dqn(5,3,0.9) # 5 sensors, 3 actions, gama = 0.9
+brain = Dqn(5,3,0.9) # 5 sensors, 3 actions, gamma = 0.9
 action2rotation = [0,20,-20] # action = 0 => no rotation, action = 1 => rotate 20 degres, action = 2 => rotate -20 degres
 last_reward = 0 # initializing the last reward
 scores = [] # initializing the mean score curve (sliding window of the rewards) with respect to time
@@ -89,9 +89,9 @@ class Car(Widget):
 
 class Ball1(Widget): # sensor 1 (see kivy tutorials: kivy https://kivy.org/docs/tutorials/pong.html)
     pass
-class Ball2(Widget): # sensor 2 (see kivy tutorials: kivy https://kivy.org/docs/tutorials/pong.html)
+class Ball2(Widget): # sensor 2 
     pass
-class Ball3(Widget): # sensor 3 (see kivy tutorials: kivy https://kivy.org/docs/tutorials/pong.html)
+class Ball3(Widget): # sensor 3 
     pass
 
 # Creating the game class (to understand "ObjectProperty", see kivy tutorials: kivy https://kivy.org/docs/tutorials/pong.html)
@@ -136,7 +136,7 @@ class Game(Widget):
         self.ball2.pos = self.car.sensor2 # updating the position of the second sensor (ball2) right after the car moved
         self.ball3.pos = self.car.sensor3 # updating the position of the third sensor (ball3) right after the car moved
 
-        if sand[int(self.car.x),int(self.car.y)] > 0: # if the car is on the sand
+        if sand[int(self.car.x), int(self.car.y)] > 0: # if the car is on the sand
             self.car.velocity = Vector(1, 0).rotate(self.car.angle) # it is slowed down (speed = 1)
             last_reward = -1 # and reward = -1
         else: # otherwise
@@ -205,8 +205,8 @@ class CarApp(App):
         Clock.schedule_interval(parent.update, 1.0 / 60.0)
         self.painter = MyPaintWidget()
         clearbtn = Button(text='clear')
-        savebtn = Button(text='save',pos=(parent.width,0))
-        loadbtn = Button(text='load',pos=(2*parent.width,0))
+        savebtn = Button(text='save', pos=(parent.width,0))
+        loadbtn = Button(text='load', pos=(2*parent.width,0))
         clearbtn.bind(on_release=self.clear_canvas)
         savebtn.bind(on_release=self.save)
         loadbtn.bind(on_release=self.load)
