@@ -22,7 +22,7 @@ class NeuralNetwork(object):
 		be backpropagated later to optimise our weights.
     """
 	def __init__(self, input_neurons, neurons_output):
-		# Inherits from nn.Module
+		# Inherits from nn.Module. Neurons_out is the number of possible actions
 		super(NeuralNetwork, self).__init__()
 
 		# Attatching our parameters as variables to the later created object
@@ -36,12 +36,12 @@ class NeuralNetwork(object):
         self.hidden_layer = nn.Linear(30, self.neurons_output)
 
     def forward_propagate(self, state):
-    	# Applying a rectifyer activation function against our 
+    	# Applying a rectifyer activation function against our hypothesised inputs
     	activated_neurons = F.relu(self.input_layer(state))
-    	q_values = self.hidden_layer(activated_neurons)
+    	q_val_action = self.hidden_layer(activated_neurons)
 
-    	# Returning the weighted, rectified input neurons
-    	return q_values
+    	# Returning n number of actions the car can take 
+    	return q_val_action
 
 # Experience replay 
 class ExperienceReplay(object):
@@ -84,3 +84,35 @@ class ExperienceReplay(object):
 			    and then reshaping these samples so that they're shaped with respect
 			    to time. '''
 			return map(lambda x: Variable(torch.cat(x, 0)), samples)
+
+# Implementing Deep Q Learning
+class DeepQNetwork(object):
+	""" This is different to the neural network which just mapped out
+	 	the network's computational graph. This is the model in action.
+	 	our self.dqn_model can take values as that's how nn.Linear works.
+	"""
+	def __init__(self, input_neurons, neurons_output, gamma):
+
+		""" Discount factor - it models the fact future reward is worth less than 
+		immediate reward. """
+		self.gamma = gamma
+
+		# Let's us track performance by storing mean of last n rewards (should increase)
+		self.reward_window = []
+
+		self.dqn_model = NeuralNetwork(input_neurons, neurons_output)
+		self.memory = ExperienceReplay(100000)
+		
+		# Optimiser for stochastic gradient decent
+		self.optimiser = optim.Adam(self.dqn_model.parameters(), lr=0.001)
+
+		''' We store the last state as a tensor of size n and then we unsqueeze is 
+			to get a fake dimension as a tensor of size 1 x n which means that we 
+			can use treat it as a batch '''
+		self.last_state = torch.Tensor(input_neurons).unsqueeze(0)
+
+		# Either index 0, 1 or 2 referring to rotations that can be made. [0, 20, -20]
+		self.last_action = 0
+
+		# Initialising as 0
+		self.last_reward = 0
