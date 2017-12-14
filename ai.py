@@ -38,14 +38,14 @@ class NeuralNetwork(object):
     def forward_propagate(self, state):
     	# Applying a rectifyer activation function against our hypothesised inputs
     	activated_neurons = F.relu(self.input_layer(state))
-    	q_val_action = self.hidden_layer(activated_neurons)
+    	q_val = self.hidden_layer(activated_neurons)
 
     	# Returning n number of actions the car can take 
-    	return q_val_action
+    	return q_val
 
 # Experience replay 
 class ExperienceReplay(object):
-	""" This is too prevent independencies/correlations between consecutive states from
+	""" This is to prevent independencies/correlations between consecutive states from
 		biasing our network by storing interdependent states into batch experiences and 
 		then putting them into the network after. 
 
@@ -116,3 +116,104 @@ class DeepQNetwork(object):
 
 		# Initialising as 0
 		self.last_reward = 0
+
+	def select_action(self, input_state):
+		''' Chose a softmax because it's based on multinomial probability and
+			so it will allow us to explore new options as opposed to an argmax. 
+
+			We also don't need to differentiate because probabilities is based
+			on an input value and it would make no sense to partially differentiate 
+			loss with respect to an input value. So volatile=True to leave out the
+			gradient. 
+
+			Our temperature "T" dictates the probability (or how sure) that our model
+			will settle for the final q_value. Our car will behave less insect like and
+			more intelligently because the higher out temperature, the higher the prob
+			of the winning q_value making the car seem more sure of where it's going. '''
+		probabilities = F.softmax(self.dqn_model(Variable(input_state, volatile=True)) * 7) # T=7
+
+		# Taking a random draw of the probabilities distribution
+		action = probabilities.multinomial()
+
+		# Getting actual action
+		return action.data[0, 0]
+
+	# Our paramenters model a transition of the markov decision process
+	def learn(self, batch_state, batch_next_state, batch_reward, batch_action):
+		
+		''' Obtaining Q-Values as outputs from putting batch_state through our deep q
+			network and then we define outputs by the dimensions of batch_action. '''
+		outputs = self.model(batch_state).gather(1, batch_action.unsqueeze(1)).squeeze(1)
+
+		# Returning only the maximum Q values of the next state for Q-learning formula
+		# Format of next_outputs = s, a
+		# Maximum of the q_vals of next state according to actions...
+		next_outputs = self.model(batch_next_state).detach().max(1)[0]
+
+		# Bellman's equation
+		target = self.gamma * next_outputs + batch_reward
+
+		# Our loss for gradient decent 
+		td_loss = F.smooth_l1_loss(outputs, target)
+		
+		# Deleting gradients for new ones in forward propagation
+		self.optimiser.zero_grad()
+
+		# Back propagating the error in the network 
+		td_loss.backward(retrain_variables = True)
+
+		# Updating weights
+		self.optimiser.step()
+
+	# Making an update to the rewards and signals for the car from the car's sensors
+	def update(self, reward, new_signal):
+
+		''' We'll input the last_signal from map which shows the state as orientation 
+			and the 3 car signals '''
+		new_state = torch.Tensor(new_signal).float().unsqueeze(0) # st + 1
+
+		# Adding a transition to our memory: [st, st+1, a, r] 
+		self.memory.push((self.last_state, new_state, torch.LongTensor([int(self.last_action)]), torch.Tensor([last_reward])))
+
+		# Play a new action after reaching a state
+		action = self.select_action(new_state)
+
+		if len(self.memory.memory) > 100:
+			batch_state, batch_next_state, batch_reward, batch_action = self.memory.sample(100)
+			self.learn(batch_state, batch_next_state, batch_reward, batch_action)
+
+		# Updating last_features to the features we just recalcualated
+		self.last_action = batch_action
+		self.new_state = new_state
+		self.last_reward = reward
+
+		# Updating the reward window to track performance
+		self.reward_window.append(last_reward)
+
+		# Keeping the window of a fixed size
+		if len(self.reward_window) > 1000:
+			del self.reward_window[0]
+
+		return action
+
+	# Gives us the mean of the rewards in the sliding window 
+	def score(self):
+		return sum(self.reward_window)/len(self.reward_window + 1) # Making sure len([rewardwindow]) > 1
+
+	# Allows us to save models (last weights) & (last optimiser) into long term memory for reuse.
+	def save(self):
+
+		''' Saves the parmeter of our model as a corresponding value to our state dict
+			key '''
+		torch.save({'state_dict': self.model.state_dict(),
+			 		'optimiser':self.optimiser.state_dict,
+			 		}, 'lastModelAndOptim.pth')
+
+		def load(self):
+
+			# Checking if file exists
+			if os.path.isfile('lastModelAndOptim.pth'):
+				print('File found, loading last model...')
+				last_model = torch.load('lastModelAndOptim.pth')
+			else:
+				print("A saved model checkpoint isn't found found...")
