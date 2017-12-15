@@ -222,14 +222,17 @@ class CarApp(App):
         self.painter.canvas.clear()
         sand = np.zeros((longueur,largeur))
 
-    def save(self, obj): # save button
-        print("saving brain...")
+    def save(self, obj):
+        print("Saving experiences...")
         brain.save()
         plt.plot(scores)
+        plt.title('Mean Score VS Time graph')
+        plt.ylabel('Mean score')
+        plt.xlabel('Time')
         plt.show()
 
-    def load(self, obj): # load button
-        print("loading last saved brain...")
+    def load(self, obj):
+        print("loading last saved memories...")
         brain.load()
 
 # Running the app

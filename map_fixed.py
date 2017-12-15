@@ -224,7 +224,9 @@ class CarApp(App):
         print("Saving experiences...")
         brain.save()
         plt.plot(scores)
-        plt.title('Reward')
+        plt.title('Mean Score VS Time graph')
+        plt.ylabel('Mean score')
+        plt.xlabel('Time')
         plt.show()
 
     def load(self, obj):
