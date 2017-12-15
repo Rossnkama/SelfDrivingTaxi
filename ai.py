@@ -128,8 +128,10 @@ class DeepQNetwork():
 		Our temperature "T" dictates the probability (or how sure) that our model
 		will settle for the final q_value. Our car will behave less insect like and
 		more intelligently because the higher out temperature, the higher the prob
-		of the winning q_value making the car seem more sure of where it's going. '''
-		probabilities = F.softmax(self.dqn_model(Variable(input_state, volatile=True)) * 100) # T=100
+		of the winning q_value making the car seem more sure of where it's going. 
+		
+		Therefore if you'd like to deactivate the AI, set temperature to 0.'''
+		probabilities = F.softmax(self.dqn_model(Variable(input_state, volatile=True)) * 9) # T=100
 
 		# Taking a random draw of the probabilities distribution
 		action = probabilities.multinomial()
@@ -201,24 +203,23 @@ class DeepQNetwork():
 	# Allows us to save models (last weights) & (last optimiser) into long term memory for reuse.
 	def save(self):
 
-		''' Saves the parmeter of our model as a corresponding value to our state dict
+		''' Saves the parameters of our model as a corresponding value to our state dict
 		key '''
 		torch.save({'state_dict': self.dqn_model.state_dict(),
-		'optimiser':self.optimiser.state_dict,
-		}, 'lastModelAndOptim.pth')
+					'optimizer' : self.optimiser.state_dict(),
+					}, 'last_brain.pth')
 
+	# Checking if file exists
 	def load(self):
-
-		# Checking if file exists
-		if os.path.isfile('lastModelAndOptim.pth'):
+		if os.path.isfile('last_brain.pth'):
 			print('File found, loading last model...')
-			last_model = torch.load('lastModelAndOptim.pth')
+			last_model = torch.load('last_brain.pth')
 
 			# Loading last_model
 			self.dqn_model.load_state_dict(last_model['state_dict'])
-			# Loading last_optimiser
-			self.dqn_model.load_state_dict(last_model['optimiser'])
-			print('Loaded.')
 
+			# Loading last_optimiser
+			self.optimiser.load_state_dict(last_model['optimizer'])
+			print('Loaded.')
 		else:
 			print("A saved model checkpoint isn't found...")
