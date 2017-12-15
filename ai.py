@@ -131,7 +131,7 @@ class DeepQNetwork():
 		of the winning q_value making the car seem more sure of where it's going. 
 		
 		Therefore if you'd like to deactivate the AI, set temperature to 0.'''
-		probabilities = F.softmax(self.dqn_model(Variable(input_state, volatile=True)) * 9) # T=100
+		probabilities = F.softmax(self.dqn_model(Variable(input_state, volatile=True)) * 100) # T=100
 
 		# Taking a random draw of the probabilities distribution
 		action = probabilities.multinomial()

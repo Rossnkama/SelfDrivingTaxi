@@ -221,13 +221,14 @@ class CarApp(App):
         sand = np.zeros((longueur,largeur))
 
     def save(self, obj):
-        print("saving brain...")
+        print("Saving experiences...")
         brain.save()
         plt.plot(scores)
+        plt.title('Reward')
         plt.show()
 
     def load(self, obj):
-        print("loading last saved brain...")
+        print("loading last saved memories...")
         brain.load()
 
 # Running the whole thing
