@@ -162,6 +162,12 @@ class Game(Widget):
         if distance < 100:
             goal_x = self.width-goal_x
             goal_y = self.height-goal_y
+        
+        # Add living penalty
+        else:
+            # While the agent isnt being rewarded, take a living penalty off it's score
+            last_reward -= 1 
+        
         last_distance = distance
 
 # Adding the painting tools

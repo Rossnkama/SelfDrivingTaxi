@@ -34,11 +34,14 @@ class NeuralNetwork(nn.Module):
 		''' Creating synaptical connection between layers 
             input --> hidden --> output 
             REMEMBER TO MESS WITH HYPERPARAMETER(30) LATER '''
-		self.input_layer = nn.Linear(input_neurons, 30)
-		self.hidden_layer = nn.Linear(30, neurons_output)
+		self.input_layer = nn.Linear(self.input_neurons, 30)
+		# self.hidden_layer = nn.Linear(30, 30)
+		self.hidden_layer = nn.Linear(30, self.neurons_output)
+		# self.output_layer = nn.Linear(30, self.neurons_output)
 
 	def forward(self, state):
 		x = F.relu(self.input_layer(state))
+		# y = self.hidden_layer(x)
 		q_values = self.hidden_layer(x)
 		return q_values
 
@@ -77,12 +80,12 @@ class ExperienceReplay(object):
 	def sample(self, batch_size):
 
 		# Zipping corresponding batch features together as explained in docs
-		samples = zip(*random.sample(self.memory, batch_size))
+		self.samples = zip(*random.sample(self.memory, batch_size))
 
 		''' Wrapping each of all our samples into a pytorch variable for backpropagation
 		and then reshaping these samples so that they're shaped with respect
 		to time. '''
-		return map(lambda x: Variable(torch.cat(x, 0)), samples)
+		return map(lambda x: Variable(torch.cat(x, 0)), self.samples)
 
 # Implementing Deep Q Learning
 class DeepQNetwork():
@@ -100,7 +103,7 @@ class DeepQNetwork():
 		self.reward_window = []
 
 		self.dqn_model = NeuralNetwork(input_neurons, neurons_output)
-		self.memory = ExperienceReplay(100000)
+		self.memory = ExperienceReplay(1000000)					# Experiement with the capacity
 
 		# Optimiser for stochastic gradient decent
 		self.optimiser = optim.Adam(self.dqn_model.parameters(), lr=0.001)
@@ -131,7 +134,9 @@ class DeepQNetwork():
 		of the winning q_value making the car seem more sure of where it's going. 
 		
 		Therefore if you'd like to deactivate the AI, set temperature to 0.'''
-		probabilities = F.softmax(self.dqn_model(Variable(input_state, volatile=True)) * 100) # T=100
+		temperature = 80
+
+		probabilities = F.softmax(self.dqn_model(Variable(input_state, volatile=True)) * temperature) # T=100 --> AI doesn't explore
 
 		# Taking a random draw of the probabilities distribution
 		action = probabilities.multinomial()
@@ -180,7 +185,7 @@ class DeepQNetwork():
 		action = self.select_action(new_state)
 
 		if len(self.memory.memory) > 100:
-			batch_state, batch_next_state, batch_action, batch_reward = self.memory.sample(100)
+			batch_state, batch_next_state, batch_action, batch_reward = self.memory.sample(100) # Experiment with batch size
 			self.learn(batch_state, batch_next_state, batch_reward, batch_action)
 
 		# Updating last_features to the features we just recalcualated
