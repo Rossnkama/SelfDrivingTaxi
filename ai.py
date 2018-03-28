@@ -50,10 +50,8 @@ class ExperienceReplay(object):
 	""" This is to prevent independencies/correlations between consecutive states from
 	biasing our network by storing interdependent states into batch experiences and 
 	then putting them into the network after. 
-
 	This is done by taking a uniformly distributed and random selection of a batch 
 	of experiences to learn from.
-
 	This is where an experience is defined --> [s, a, s_prime, reward]...
 	The sample batches are reshaped experiences being [[s1, s2, s3], [a1, a2, a3], [s_prime1, s_prime2, s_prime3]]
 	"""
@@ -122,12 +120,10 @@ class DeepQNetwork():
 	def select_action(self, input_state):
 		''' Chose a softmax because it's based on multinomial probability and
 		so it will allow us to explore new options as opposed to an argmax. 
-
 		We also don't need to differentiate because probabilities is based
 		on an input value and it would make no sense to partially differentiate 
 		loss with respect to an input value. So volatile=True to leave out the
 		gradient. 
-
 		Our temperature "T" dictates the probability (or how sure) that our model
 		will settle for the final q_value. Our car will behave less insect like and
 		more intelligently because the higher out temperature, the higher the prob
